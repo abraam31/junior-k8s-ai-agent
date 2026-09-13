@@ -2,6 +2,7 @@ from kubernetes import client, config
 from kubernetes.client import ApiClient, CoreV1Api
 from pathlib import Path
 import argparse
+import re
 
 KUBECONFIG_PATH = Path(__file__).resolve().parent / "k8s-object" / "config"
 
@@ -72,23 +73,34 @@ def get_pods_logs(
 
 def get_pods_status(api_client: ApiClient, namespace: str = "sandbox") -> list[dict]:
     results = []
+    problematic_owners = set()
+    flagged_owners = set()
     core = CoreV1Api(api_client)
     pods = core.list_namespaced_pod(namespace=namespace)
     for pod in pods.items:
         containers = pod.status.container_statuses or []
+        owner_refs = pod.metadata.owner_references
+        owner = pod_owner(owner_refs[0]) if owner_refs else None
         for container in containers:
             cname_p, reason_p, message_p, problematic = check_container_status(container)
             if problematic:
+                if owner and owner in problematic_owners:
+                    continue
                 results.append({
                     "pod": pod.metadata.name,
                     "namespace": namespace,
-                    "container": cname_p,
+                    "container": cname_p,  
                     "reason": reason_p,
                     "message": message_p,
                     "category": "problematic",
+                    "owner": owner,
                 })
+                if owner:
+                    problematic_owners.add(owner)
             cname_f, reason_f, message_f, flagged = check_last_state(container)
             if flagged:
+                if owner and owner in flagged_owners:
+                    continue
                 results.append({
                     "pod": pod.metadata.name,
                     "namespace": namespace,
@@ -96,14 +108,26 @@ def get_pods_status(api_client: ApiClient, namespace: str = "sandbox") -> list[d
                     "reason": reason_f,
                     "message": message_f,
                     "category": "flagged",
+                    "owner": owner,
                 })
+                if owner:
+                    flagged_owners.add(owner)
     return results
 
-# def main(namespace: str, tail_lines: int, kubeconfig: Path) -> None:
-#     api_client = load_kube_config(kubeconfig)
-#     results = get_pods_status(api_client, namespace)
-#     for result in results:
-#         print(result)
+def pod_owner(owner_ref: client.V1OwnerReference) -> str:
+    type = owner_ref.kind
+    name = owner_ref.name
+    owner = re.sub(r'-[0-9]+$', '', name)
+    ## want to remove the numeric part of the name
+
+    return f"{type}/{owner}"
+
+
+def main(namespace: str, tail_lines: int, kubeconfig: Path) -> None:
+    api_client = load_kube_config(kubeconfig)
+    results = get_pods_status(api_client, namespace)
+    for result in results:
+        print(result)
     
     # if problems:
     #     for pod, containers in problematic_pods.items():
@@ -118,10 +142,10 @@ def get_pods_status(api_client: ApiClient, namespace: str = "sandbox") -> list[d
     # if not problems and not flags:
     #     print("No problems found")
 
-# if __name__ == "__main__":
-#     parser = argparse.ArgumentParser()
-#     parser.add_argument("--namespace", type=str, default="sandbox")
-#     parser.add_argument("--tail-lines", type=int, default=100)
-#     parser.add_argument("--kubeconfig", type=Path, default=KUBECONFIG_PATH)
-#     args = parser.parse_args()
-#     main(args.namespace, args.tail_lines, args.kubeconfig)
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--namespace", type=str, default="sandbox")
+    parser.add_argument("--tail-lines", type=int, default=100)
+    parser.add_argument("--kubeconfig", type=Path, default=KUBECONFIG_PATH)
+    args = parser.parse_args()
+    main(args.namespace, args.tail_lines, args.kubeconfig)
