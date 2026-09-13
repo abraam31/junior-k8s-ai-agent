@@ -4,10 +4,10 @@ from pathlib import Path
 import argparse
 import re
 
-KUBECONFIG_PATH = Path(__file__).resolve().parent / "k8s-object" / "config"
+KUBECONFIG_PATH = Path(__file__).resolve().parent.parent.parent / "k8s-object" / "config"
 
 def load_kube_config(kubeconfig: Path = KUBECONFIG_PATH) -> ApiClient:
-    try: 
+    try:
         config.load_incluster_config()
     except config.config_exception.ConfigException:
         config.load_kube_config(config_file=str(kubeconfig))
@@ -89,7 +89,7 @@ def get_pods_status(api_client: ApiClient, namespace: str = "sandbox") -> list[d
                 results.append({
                     "pod": pod.metadata.name,
                     "namespace": namespace,
-                    "container": cname_p,  
+                    "container": cname_p,
                     "reason": reason_p,
                     "message": message_p,
                     "category": "problematic",
@@ -128,7 +128,7 @@ def main(namespace: str, tail_lines: int, kubeconfig: Path) -> None:
     results = get_pods_status(api_client, namespace)
     for result in results:
         print(result)
-    
+
     # if problems:
     #     for pod, containers in problematic_pods.items():
     #         for cname, reason, message in containers:
