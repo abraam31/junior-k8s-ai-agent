@@ -21,7 +21,14 @@ Investigate using get_logs whenever the status is not enough to identify the roo
 You must always end by calling submit_diagnosis, never by just writing a text answer.
 Set escalate=true only if the root cause looks like an application/code issue rather
 than something you can fully explain from Kubernetes-level data (resources, config,
-image pull, node issues).""" 
+image pull, node issues).
+
+For any pod you cannot fully explain, whether because logs were unavailable or because
+the evidence points to application-level behavior (business logic, rate limiting,
+external dependencies) that your tools cannot inspect further, that pod's diagnosis
+must use category="unclear" and escalate=true. Never mark a pod as k8s_issue unless
+you have concrete Kubernetes-level evidence for it specifically: a named reason like
+OOMKilled, ImagePullBackOff, or a missing secret/configmap you can point to. """ 
 
 TOOLS = [
     {
@@ -71,11 +78,21 @@ TOOLS = [
         "input_schema": {
             "type": "object",
             "properties": {
-                "category": {"type": "string", "enum": ["k8s_issue", "unclear"]},
-                "summary": {"type": "string", "description": "Plain-language summary of what's wrong and why"},
-                "escalate": {"type": "boolean", "description": "True if this needs deeper code-level investigation"},
+                "diagnosis": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "category": {"type": "string", "enum": ["k8s_issue", "unclear"]},
+                            "summary": {"type": "string", "description": "Plain-language summary of what's wrong and why"},
+                            "escalate": {"type": "boolean", "description": "True if this needs deeper code-level investigation"},
+                            "pod": {"type": "string", "description": "the pod diagnosed"},
+                            "container": {"type": "string", "description": "the container diagnosed"},
+                        }
+                    }
+                }
             },
-            "required": ["category", "summary", "escalate"],
+            "required": ["diagnosis"],
         },
     },
 ]
