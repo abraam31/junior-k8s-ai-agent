@@ -1,0 +1,7 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+
+# local kubeconfig used for sandbox testing only; in-cluster config is used in Kubernetes
+k8s-object/

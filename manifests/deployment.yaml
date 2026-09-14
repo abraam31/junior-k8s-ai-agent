@@ -1,0 +1,43 @@
+# Placeholder Deployment: a single long-running pod for Junior.
+# TODO: point image at your built image, wire up ANTHROPIC_API_KEY (and any
+# AWS credentials once cache.py talks to DynamoDB), and replace the sleep
+# command with the real entrypoint once api.py serves the /ask endpoint.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: junior
+  namespace: junior
+  labels:
+    app.kubernetes.io/name: junior
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: junior
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: junior
+    spec:
+      serviceAccountName: junior
+      containers:
+        - name: junior
+          image: junior:latest
+          imagePullPolicy: IfNotPresent
+          command: ["sleep", "infinity"]
+          env:
+            - name: ANTHROPIC_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: junior-secrets
+                  key: anthropic-api-key
+          ports:
+            - name: http
+              containerPort: 8000
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi

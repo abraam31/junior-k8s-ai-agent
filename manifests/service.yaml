@@ -1,0 +1,16 @@
+# Placeholder internal ClusterIP Service, fronting the future FastAPI /ask endpoint.
+apiVersion: v1
+kind: Service
+metadata:
+  name: junior
+  namespace: junior
+  labels:
+    app.kubernetes.io/name: junior
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: junior
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8000
