@@ -10,7 +10,7 @@ async def lifespan(app: FastAPI):
     init()
     yield 
 
-DEFAULT_NAMESPACE = "sandbox"
+FALLBACK_NAMESPACE = "sandbox"
 app = FastAPI(title="Junior API", description="API for AI Junior Agent Chatbot", lifespan=lifespan)
 
 
@@ -25,7 +25,7 @@ def health_check():
 @app.get("/ask")
 def ask(question: str):
     """ Placeholder for the ask endpoint """
-    result = answer(f"{question}\n\n If no namespace is provided, use the default namespace: {DEFAULT_NAMESPACE}")
+    result = answer(question)
     return {
         "question": question,
         "answer": result,
