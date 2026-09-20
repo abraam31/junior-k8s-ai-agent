@@ -1,1 +1,34 @@
 """FastAPI /ask endpoint for Junior will go here."""
+
+from fastapi import FastAPI
+import os
+from .agent import answer, init
+from contextlib import asynccontextmanager
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init()
+    yield 
+
+DEFAULT_NAMESPACE = "sandbox"
+app = FastAPI(title="Junior API", description="API for AI Junior Agent Chatbot", lifespan=lifespan)
+
+
+@app.get("/health")
+def health_check():
+    """ Liveness and Readiness Probe Check """
+    from .agent import _client, _api_client 
+    if _client is None or _api_client is None:
+        return {"status": "unhealthy"}, 503
+    return {"status": "healthy"}, 200
+
+@app.get("/ask")
+def ask(question: str):
+    """ Placeholder for the ask endpoint """
+    result = answer(f"{question}\n\n If no namespace is provided, use the default namespace: {DEFAULT_NAMESPACE}")
+    return {
+        "question": question,
+        "answer": result,
+        "environment": os.getenv("ENVIRONMENT", "dev"),
+        "version": os.getenv("VERSION", "0.0.1"),
+    }
