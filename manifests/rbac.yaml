@@ -2,12 +2,12 @@
 # target namespace (the namespace Junior watches, not necessarily the one it
 # runs in). Adjust `namespace` below to the namespace you want Junior to triage.
 apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
+kind: ClusterRole
 metadata:
-  name: junior-readonly
+  name: devops-agent-readonly
   namespace: sandbox
   labels:
-    app.kubernetes.io/name: junior
+    app.kubernetes.io/name: devops-agent-sa
 rules:
   - apiGroups: [""]
     resources: ["pods"]
@@ -17,17 +17,17 @@ rules:
     verbs: ["get"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
+kind: ClusterRoleBinding
 metadata:
-  name: junior-readonly
+  name: devops-agent-readonly
   namespace: sandbox
   labels:
-    app.kubernetes.io/name: junior
+    app.kubernetes.io/name: devops-agent-sa
 roleRef:
   apiGroup: rbac.authorization.k8s.io
-  kind: Role
-  name: junior-readonly
+  kind: ClusterRole
+  name: devops-agent-readonly
 subjects:
   - kind: ServiceAccount
-    name: junior
-    namespace: junior
+    name: devops-agent-sa
+    namespace: sandbox
