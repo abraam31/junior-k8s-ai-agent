@@ -10,6 +10,25 @@ MODEL = "claude-haiku-4-5"
 MAX_TOKENS = 1024
 MAX_TOOL_ROUNDS = 6
 
+_client = None
+_api_client = None
+
+def init():
+    global _client, _api_client
+    api_key = os.getenv("ANTHROPIC_API_KEY")
+    if not api_key:
+        print("Set Anthropic API key as ANTHROPIC_API_KEY in the environment: ", file=sys.stderr)
+        sys.exit(1)
+    _client = anthropic.Anthropic(api_key=api_key)
+    _api_client = load_kube_config()
+
+def answer(question) -> dict:
+    """Answer a question using the Junior Agent"""
+    first_message = f"Answer the question: {question}."
+    diagnosis = run_junior(_client, _api_client, first_message)
+    
+    return diagnosis
+    
 def run_junior(client: anthropic.Anthropic, api_client, first_message: str) -> dict:
     handlers = {
         "get_pods_status": lambda inp: get_pods_status(api_client, **inp),
