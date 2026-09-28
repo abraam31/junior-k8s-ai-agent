@@ -54,13 +54,13 @@ def run_junior(client: anthropic.Anthropic, api_client, first_message: str) -> d
         for tool_use in tool_uses:
             if tool_use.name == "submit_diagnosis":
                 print(f" -> submit_diagnosis({json.dumps(tool_use.input)})")
-                return tool_use.input
+                return {"diagnosis": tool_use.input.get("diagnosis", {}), "error": None}
 
         if response.stop_reason != "tool_use" or not tool_uses:
             text = "\n".join(b.text for b in response.content if b.type == "text")
             return {
-                "error": f"no diagnosis was produced: stop_reason={response.stop_reason}",
-                "raw_text": text,
+                "error": f"no diagnosis was produced: stop_reason={response.stop_reason}. Exact error: {text}",
+                "diagnosis": None,
             }
 
         tool_results = []
@@ -78,7 +78,7 @@ def run_junior(client: anthropic.Anthropic, api_client, first_message: str) -> d
         messages.append({"role": "assistant", "content": response.content})
         messages.append({"role": "user", "content": tool_results})
 
-    return {"diagnosis": [{"category": "unclear", "summary": "hit max tool rounds without a diagnosis", "escalate": True, "pod": None, "container": None}]}
+    return {"diagnosis": None, "error": f"no diagnosis was concluded. Stop reason: {response.stop_reason}. Hit max tool rounds without a diagnosis."}
 
 def main() -> None:
     api_key = os.getenv("ANTHROPIC_API_KEY")

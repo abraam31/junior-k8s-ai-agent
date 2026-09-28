@@ -79,9 +79,15 @@ def get_pods_status(api_client: ApiClient, namespace: str = "sandbox") -> list[d
     pods = core.list_namespaced_pod(namespace=namespace)
     for pod in pods.items:
         containers = pod.status.container_statuses or []
+        spec_by_name = {c.name: c for c in (pod.spec.containers or [])}
         owner_refs = pod.metadata.owner_references
         owner = pod_owner(owner_refs[0]) if owner_refs else None
         for container in containers:
+            spec_container = spec_by_name.get(container.name)
+            mounts = {mount.name for mount in (container.volume_mounts or [])}
+            envs = spec_container.env if spec_container else []
+            env_from = spec_container.env_from if spec_container else []
+            config_maps, secrets = extract_secrets_and_config_maps(mounts, pod.spec.volumes, envs, env_from)
             cname_p, reason_p, message_p, problematic = check_container_status(container)
             if problematic:
                 if owner and owner in problematic_owners:
@@ -94,6 +100,8 @@ def get_pods_status(api_client: ApiClient, namespace: str = "sandbox") -> list[d
                     "message": message_p,
                     "category": "problematic",
                     "owner": owner,
+                    "config_maps": config_maps,
+                    "secrets": secrets,
                 })
                 if owner:
                     problematic_owners.add(owner)
@@ -109,6 +117,8 @@ def get_pods_status(api_client: ApiClient, namespace: str = "sandbox") -> list[d
                     "message": message_f,
                     "category": "flagged",
                     "owner": owner,
+                    "config_maps": config_maps,
+                    "secrets": secrets,
                 })
                 if owner:
                     flagged_owners.add(owner)
@@ -118,10 +128,29 @@ def pod_owner(owner_ref: client.V1OwnerReference) -> str:
     type = owner_ref.kind
     name = owner_ref.name
     owner = re.sub(r'-[0-9]+$', '', name)
-    ## want to remove the numeric part of the name
-
     return f"{type}/{owner}"
 
+def extract_secrets_and_config_maps(mounts, volumes, envs, env_froms):
+    secrets = set()
+    config_maps = set()
+    for vol in volumes or []:
+        if vol.name not in mounts:
+            continue
+        if vol.secret:
+            secrets.add(vol.secret.secret_name)
+        if vol.config_map:
+            config_maps.add(vol.config_map.name)
+    for env in envs or []:
+        if env.value_from and env.value_from.secret_key_ref:
+            secrets.add(env.value_from.secret_key_ref.name)
+        if env.value_from and env.value_from.config_map_key_ref:
+            config_maps.add(env.value_from.config_map_key_ref.name)
+    for env_from in env_froms or []:
+        if env_from.secret_ref:
+            secrets.add(env_from.secret_ref.name)
+        if env_from.config_map_ref:
+            config_maps.add(env_from.config_map_ref.name)
+    return sorted(config_maps), sorted(secrets)
 
 def main(namespace: str, tail_lines: int, kubeconfig: Path) -> None:
     api_client = load_kube_config(kubeconfig)
