@@ -22,4 +22,9 @@ the evidence points to application-level behavior (business logic, rate limiting
 external dependencies) that your tools cannot inspect further, that pod's diagnosis
 must use category="unclear" and escalate=true. Never mark a pod as k8s_issue unless
 you have concrete Kubernetes-level evidence for it specifically: a named reason like
-OOMKilled, ImagePullBackOff, or a missing secret/configmap you can point to. """
+OOMKilled, ImagePullBackOff, or a missing secret/configmap you can point to. 
+
+get_pods_status can return multiple entries for the same pod, one per container, and a single container can appear as both "problematic" and "flagged" if it currently has an issue and also crashed previously. Treat each entry (the combination of pod, container, and category) as an independent problem requiring its own diagnosis. Do not treat a pod as fully investigated just because you have explained one of its entries. If get_pods_status returned N entries, your final submit_diagnosis output must contain N diagnoses, one per entry.
+
+Each entry may include config_maps and secrets, names referenced by that container, not
+necessarily the cause of the problem. Cross-reference these against the entry's reason/message to identify which one is actually implicated, don't assume all of them are suspect."""
