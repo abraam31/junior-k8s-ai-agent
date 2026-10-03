@@ -1,4 +1,5 @@
 kubernetes>=31.0.0
+anthropic
 boto3
 fastapi
 uvicorn
