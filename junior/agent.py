@@ -23,7 +23,7 @@ def build_client():
     if api_key:
         logging.info("Using Anthropic API..")
         return Anthropic(api_key=api_key), ANTHROPIC_MODEL
-    aws_region = os.getenv("AWS_REGION", "us-east-1")
+    aws_region = os.getenv("AWS_REGION")
     if aws_region:
         logging.info(f"Using Bedrock in {aws_region}..")
         return AnthropicBedrockMantle(aws_region=aws_region), BEDROCK_MODEL
@@ -32,7 +32,6 @@ def build_client():
 
 def init():
     global _client, _api_client, _model
-    aws_region = os.getenv("AWS_REGION")
     _client, _model = build_client()
     _api_client = load_kube_config()
 
@@ -91,6 +90,7 @@ def run_junior(client, api_client, first_message: str) -> dict:
 
         messages.append({"role": "assistant", "content": response.content})
         messages.append({"role": "user", "content": tool_results})
+        logging.info(f"Input token usage: {response.usage.input_tokens}. Output token usage: {response.usage.output_tokens}.")
 
     return {"diagnosis": None, "error": f"no diagnosis was concluded. Stop reason: {response.stop_reason}. Hit max tool rounds without a diagnosis."}
 
@@ -99,7 +99,7 @@ def main() -> None:
     namespace = sys.argv[1] if len(sys.argv) > 1 else "sandbox"
 
     first_message = f"Check pod status in namespace '{namespace}' and diagnose any problems you find."
-    diagnosis = run_junior(client, api_client, first_message)
+    diagnosis = run_junior(_client, _api_client, first_message)
 
     logging.info("\nFinal diagnosis:")
     logging.info(json.dumps(diagnosis, indent=2))
