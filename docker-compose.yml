@@ -11,6 +11,7 @@ services:
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
     volumes:
       - ./k8s-object:/app/k8s-object:ro
+      - ./junior:/app/junior
     depends_on:
       redis:
         condition: service_healthy

@@ -53,7 +53,7 @@ TOOLS = [
                         "properties": {
                             "category": {"type": "string", "enum": ["k8s_issue", "unclear"]},
                             "summary": {"type": "string", "description": "Plain-language summary of what's wrong and why"},
-                            "escalate": {"type": "boolean", "description": "True if this needs deeper code-level investigation"},
+                            "cached": {"type": "boolean", "description": "True if this diagnosis is cached"},
                             "pod": {"type": "string", "description": "the pod diagnosed"},
                             "container": {"type": "string", "description": "the container diagnosed"},
                         }
