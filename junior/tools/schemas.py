@@ -51,12 +51,16 @@ TOOLS = [
                     "items": {
                         "type": "object",
                         "properties": {
-                            "category": {"type": "string", "enum": ["k8s_issue", "unclear"]},
+                            "category": {
+                                "type": "string", 
+                                "enum": ["k8s_issue", "app_issue", "unclear"]
+                            },
                             "summary": {"type": "string", "description": "Plain-language summary of what's wrong and why"},
-                            "cached": {"type": "boolean", "description": "True if this diagnosis is cached"},
                             "pod": {"type": "string", "description": "the pod diagnosed"},
                             "container": {"type": "string", "description": "the container diagnosed"},
-                        }
+                        },
+                        "required": ["category", "summary", "pod", "container"],
+                        "additionalProperties": False,
                     }
                 }
             },

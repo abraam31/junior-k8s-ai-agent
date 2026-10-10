@@ -3,6 +3,7 @@
 from fastapi import FastAPI
 import os
 from .agent import answer, init
+from .models import AskRequest, AskResponse
 from contextlib import asynccontextmanager
 
 @asynccontextmanager
@@ -22,13 +23,14 @@ def health_check():
         return {"status": "unhealthy"}, 503
     return {"status": "healthy"}, 200
 
-@app.get("/ask")
-def ask(question: str):
+@app.post("/ask", response_model=AskResponse)
+def ask(req: AskRequest):
     """ Placeholder for the ask endpoint """
-    result = answer(question)
+    result = answer(req.question)
     return {
-        "question": question,
-        "answer": result,
+        "question": req.question,
+        "diagnosis": result.get("diagnosis", []),
+        "error": result.get("error", None),
         "environment": os.getenv("ENVIRONMENT", "dev"),
         "version": os.getenv("VERSION", "0.0.1"),
     }
