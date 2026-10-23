@@ -8,8 +8,9 @@ class AskRequest(BaseModel):
 
 class Diagnosis(BaseModel):
     category: Category
-    pod: str
-    container: str
+    kind: str
+    name: str
+    container: str | None = None
     summary: str
     cached: bool = False
 

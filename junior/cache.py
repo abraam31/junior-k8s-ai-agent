@@ -33,11 +33,14 @@ def init():
 
 def make_key(entry: dict, prompt_version: str) -> str:
     reason = entry.get("reason") or "unknown"
-    message = "" if reason in ["CrashLoopBackOff"] else (entry.get("message") or "")
+    # Event messages embed generated names and counts, so they'd never repeat.
+    stable_message = reason not in ["CrashLoopBackOff"] and entry["category"] != "event"
+    message = (entry.get("message") or "") if stable_message else ""
     msg_hash = hashlib.sha1(
         (message).encode()).hexdigest()[:8]
-    owner = entry.get("owner") or entry.get("pod")
-    key = ":".join(["junior", prompt_version, entry["namespace"],owner, entry["container"], entry["category"], reason, msg_hash])
+    owner = entry.get("owner") or entry["name"]
+    container = entry.get("container") or "-"
+    key = ":".join(["junior", prompt_version, entry["namespace"], entry["kind"], owner, container, entry["category"], reason, msg_hash])
     return key
 
 def get_entry(key: str):

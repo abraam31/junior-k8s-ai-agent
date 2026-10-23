@@ -1,7 +1,7 @@
 import json
 import os
 import sys
-from .tools.k8s import load_kube_config, get_pods_status, get_pods_logs
+from .tools.k8s import load_kube_config, get_pods_status, get_pods_logs, get_events
 from .tools.schemas import TOOLS
 from .prompts import SYSTEM_PROMPT
 from .cache import make_key, set_entry, get_entry, init as init_cache
@@ -58,18 +58,27 @@ def answer(question) -> dict:
 
 def run_junior(client, api_client, first_message: str) -> dict:
     seen = {}
-    def status_handler(inp):
-        entries = get_pods_status(api_client, **inp)
+    def with_cache(entries):
         for entry in entries:
             key = make_key(entry, _prompt_version)
             hit = get_entry(key)
-            seen[(entry["pod"], entry["container"])] = (key, hit is not None)
+            identity = (entry["kind"], entry["name"], entry.get("container"))
+            seen[identity] = (key, hit is not None)
             if hit:
                 entry["cached_diagnosis"] = hit
-        return entries
+        return entries 
+
+    def pod_status_handler(inp):
+        entries = get_pods_status(api_client, **inp)
+        return with_cache(entries)
+
+    def events_handler(inp):
+        entries = get_events(api_client, **inp)
+        return with_cache(entries)
 
     handlers = {
-        "get_pods_status": status_handler,
+        "get_pods_status": pod_status_handler,
+        "get_events": events_handler,
         "get_pods_logs": lambda inp: get_pods_logs(api_client, **inp),
     }
 
@@ -84,7 +93,7 @@ def run_junior(client, api_client, first_message: str) -> dict:
             system=SYSTEM_PROMPT,
             tool_choice={"type": "auto"},
         )
-
+        print(response)
         logging.info(f"Round {round_num}: stop_reason={response.stop_reason}")
 
         tool_uses = [b for b in response.content if b.type == "tool_use"]
@@ -93,9 +102,11 @@ def run_junior(client, api_client, first_message: str) -> dict:
             if tool_use.name == "submit_diagnosis":
                 logging.info(f" -> submit_diagnosis({json.dumps(tool_use.input)})")
                 for d in tool_use.input.get("diagnosis", []):
-                    key, was_cached = seen.get((d.get("pod"), d.get("container")), (None, True))
+                    identity = (d.get("kind"), d.get("name"), d.get("container"))
+                    key, was_cached = seen.get(identity, (None, False))
                     if key and not was_cached:
                         set_entry(key, d)
+                    d["cached"] = was_cached
                 return {"diagnosis": tool_use.input.get("diagnosis", []), "error": None}
 
         if response.stop_reason != "tool_use" or not tool_uses:

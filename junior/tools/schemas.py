@@ -40,9 +40,23 @@ TOOLS = [
             "required": ["pod", "container", "namespace"]
         }
     },
+    { 
+        "name": "get_events",
+        "description": "Get events of a given namespace. It returns a dictionary of events with the event message as the key and the values is a tuple of (Kubernetes Object kind/name,number of occurences of events, seconds since first occurrence, seconds since last occurrence).",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "namespace": {
+                    "type": "string",
+                    "description": "the namespace to get the events of"
+                }
+            },
+            "required": [],
+        }
+    },
     {
         "name": "submit_diagnosis",
-        "description": "Submit your diagnosis for the given pods. It returns a structured verdict.",
+        "description": "Submit your diagnosis for the found issues, whether it is a pod issue or a general issue like PVC or RBAC or else. It returns a structured verdict.",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -56,10 +70,14 @@ TOOLS = [
                                 "enum": ["k8s_issue", "app_issue", "unclear"]
                             },
                             "summary": {"type": "string", "description": "Plain-language summary of what's wrong and why"},
-                            "pod": {"type": "string", "description": "the pod diagnosed"},
-                            "container": {"type": "string", "description": "the container diagnosed"},
+                            "kind": {
+                                "type": "string",
+                                "description": "Kubernetes kind of the object diagnosed, e.g. Pod, ReplicaSet, PersistentVolumeClaim"
+                            },
+                            "name": {"type": "string", "description": "name of the object diagnosed, e.g. the pod name, or the PVC name"},
+                            "container": {"type": "string", "description": "the container diagnosed in case the kind is Pod"},
                         },
-                        "required": ["category", "summary", "pod", "container"],
+                        "required": ["category", "summary", "kind", "name"],
                         "additionalProperties": False,
                     }
                 }
