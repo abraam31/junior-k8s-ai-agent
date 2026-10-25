@@ -1,19 +1,6 @@
-from kubernetes import client, config
+from kubernetes import client
 from kubernetes.client import ApiClient, CoreV1Api
-from pathlib import Path
-import argparse
 import re
-from datetime import datetime, timezone
-import json 
-
-KUBECONFIG_PATH = Path(__file__).resolve().parent.parent.parent / "k8s-object" / "config"
-
-def load_kube_config(kubeconfig: Path = KUBECONFIG_PATH) -> ApiClient:
-    try:
-        config.load_incluster_config()
-    except config.config_exception.ConfigException:
-        config.load_kube_config(config_file=str(kubeconfig))
-    return client.ApiClient()
 
 def check_container_status(container: client.V1ContainerStatus) ->  tuple[str, str, str, bool]:
     problematic = False
@@ -50,28 +37,6 @@ def check_last_state(container: client.V1ContainerStatus) -> tuple[str, str, str
                 flagged = True
                 return name, reason, message, flagged
     return None, None, None, flagged
-
-def get_pods_logs(
-    api_client: ApiClient,
-    pod: str,
-    container: str,
-    namespace: str = "sandbox",
-    previous: bool = False,
-    tail_lines: int = 100,
-) -> str:
-    core = CoreV1Api(api_client)
-    try:
-        logs = core.read_namespaced_pod_log(
-            pod,
-            namespace,
-            container=container,
-            previous=previous,
-            tail_lines=tail_lines,
-        )
-    except client.rest.ApiException as e:
-        print(f"Error getting logs for {pod}/{container}: {e}")
-        return "no logs available"
-    return logs
 
 def get_pods_status(api_client: ApiClient, namespace: str = "sandbox") -> list[dict]:
     results = []
@@ -155,66 +120,3 @@ def extract_secrets_and_config_maps(mounts, volumes, envs, env_froms):
         if env_from.config_map_ref:
             config_maps.add(env_from.config_map_ref.name)
     return sorted(config_maps), sorted(secrets)
-
-def get_events(api_client: ApiClient, namespace: str = "sandbox") -> list[dict]:
-    core = CoreV1Api(api_client)
-    events = core.list_namespaced_event(namespace=namespace)
-    now = datetime.now(timezone.utc)
-    results = []
-    seen = set()
-
-    for event in events.items:
-        if event.type == "Normal":
-            continue 
-        obj = event.involved_object
-        container = None
-        if obj.field_path:
-            match = re.search(r"\{(.+)\}", obj.field_path)
-            container = match.group(1) if match else None
-        key = (obj.kind, obj.name, container, event.reason)
-        if key in seen:
-            continue
-        seen.add(key)
-        first = int((now - event.first_timestamp).total_seconds()) if event.first_timestamp else 0
-        last = int((now - event.last_timestamp).total_seconds()) if event.last_timestamp else 0
-        results.append({
-            "name": obj.name,
-            "kind": obj.kind,
-            "namespace": obj.namespace,
-            "container": container,
-            "reason": event.reason,
-            "message": event.message,
-            "category": "event",
-            "first_seen_seconds_ago": first,
-            "last_seen_seconds_ago": last,
-            "num_times_seen": event.count,
-
-        })
-    return results
-
-# def main(namespace: str, tail_lines: int, kubeconfig: Path) -> None:
-#     api_client = load_kube_config(kubeconfig)
-#     # results = get_pods_status(api_client, namespace)
-#     # for result in results:
-#     #     print(result)
-#     get_events(api_client, namespace)
-#     # if problems:
-#     #     for pod, containers in problematic_pods.items():
-#     #         for cname, reason, message in containers:
-#     #             logs = get_pods_logs(api_client, pod, cname, namespace=namespace, tail_lines=tail_lines)
-#     #             print(f"Problematic {pod}/{cname} ({reason}): {message}\n{logs}")
-#     # if flags:
-#     #     for pod, containers in flagged_pods.items():
-#     #         for cname, reason, message in containers:
-#     #             logs = get_pods_logs(api_client, pod, cname, namespace=namespace, previous=True, tail_lines=tail_lines)
-#     #             print(f"Flagged {pod}/{cname} ({reason}): {message}\n{logs}")
-#     # if not problems and not flags:
-#     #     print("No problems found")
-
-# if __name__ == "__main__":
-#     parser = argparse.ArgumentParser()
-#     parser.add_argument("--namespace", type=str, default="sandbox")
-#     parser.add_argument("--tail-lines", type=int, default=100)
-#     parser.add_argument("--kubeconfig", type=Path, default=KUBECONFIG_PATH)
-#     args = parser.parse_args()
-#     main(args.namespace, args.tail_lines, args.kubeconfig)

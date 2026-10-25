@@ -1,7 +1,10 @@
 import json
 import os
 import sys
-from .tools.k8s import load_kube_config, get_pods_status, get_pods_logs, get_events
+from .tools.client import load_kube_config
+from .tools.pods import get_pods_status
+from .tools.logs import get_pods_logs
+from .tools.events import get_events
 from .tools.schemas import TOOLS
 from .prompts import SYSTEM_PROMPT
 from .cache import make_key, set_entry, get_entry, init as init_cache
