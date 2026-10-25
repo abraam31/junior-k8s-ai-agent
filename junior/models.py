@@ -16,7 +16,8 @@ class Diagnosis(BaseModel):
 
 class AskResponse(BaseModel):
     question: str
-    diagnosis: list[Diagnosis] | None
+    diagnosis: list[Diagnosis] | None = None
+    summary: str | None = None
     error: str | None
     environment: str
     version: str

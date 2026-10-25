@@ -94,9 +94,10 @@ TOOLS = [
                         "required": ["category", "summary", "kind", "name"],
                         "additionalProperties": False,
                     }
-                }
+                },
+                "summary": {"type": "string", "description": "1-3 sentence answer to the question, also when no issues were found, e.g. 'Both nodes are Ready and schedulable; no node issues.'"},
             },
-            "required": ["diagnosis"],
+            "required": ["diagnosis", "summary"],
         },
     },
 ]

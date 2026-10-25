@@ -30,6 +30,7 @@ def ask(req: AskRequest):
     return {
         "question": req.question,
         "diagnosis": result.get("diagnosis", []),
+        "summary": result.get("summary"),
         "error": result.get("error", None),
         "environment": os.getenv("ENVIRONMENT", "dev"),
         "version": os.getenv("VERSION", "0.0.1"),

@@ -111,7 +111,7 @@ def run_junior(client, api_client, first_message: str) -> dict:
                     if key and not was_cached:
                         set_entry(key, d)
                     d["cached"] = was_cached
-                return {"diagnosis": tool_use.input.get("diagnosis", []), "error": None}
+                return {"diagnosis": tool_use.input.get("diagnosis", []), "summary": tool_use.input.get("summary", ""),"error": None}
 
         if response.stop_reason != "tool_use" or not tool_uses:
             text = "\n".join(b.text for b in response.content if b.type == "text")
