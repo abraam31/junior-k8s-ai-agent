@@ -2,9 +2,9 @@ import json
 import os
 import sys
 from .tools.client import load_kube_config
-from .tools.pods import get_pods_status
-from .tools.logs import get_pods_logs
+from .tools.workloads import get_pods_status, get_pods_logs
 from .tools.events import get_events
+from .tools.cluster import get_nodes_status
 from .tools.schemas import TOOLS
 from .prompts import SYSTEM_PROMPT
 from .cache import make_key, set_entry, get_entry, init as init_cache
@@ -83,6 +83,7 @@ def run_junior(client, api_client, first_message: str) -> dict:
         "get_pods_status": pod_status_handler,
         "get_events": events_handler,
         "get_pods_logs": lambda inp: get_pods_logs(api_client, **inp),
+        "get_nodes_status": lambda inp: get_nodes_status(api_client, **inp)
     }
 
     messages = [{"role": "user", "content": first_message}]

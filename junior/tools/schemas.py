@@ -55,6 +55,20 @@ TOOLS = [
         }
     },
     {
+        "name": "get_nodes_status",
+        "description": "Get status of all nodes in the cluster. It returns a list of nodes with their: name, labels, taints, readiness, schedulable, and issues if present. Usually don't need this tool unless either there is explicit question about nodes status in the cluster, or the pods issues is like stuck in pending state, or any issue that might be related to nodes which should be explicit and clear.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "node_name": {
+                    "type": "string",
+                    "description": "the name of a specific node to get its status, otherwise all nodes will be returned"
+                }
+            },
+            "required": [],
+        }
+    },
+    {
         "name": "submit_diagnosis",
         "description": "Submit your diagnosis for the found issues, whether it is a pod issue or a general issue like PVC or RBAC or else. It returns a structured verdict.",
         "input_schema": {

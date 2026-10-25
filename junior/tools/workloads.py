@@ -120,3 +120,25 @@ def extract_secrets_and_config_maps(mounts, volumes, envs, env_froms):
         if env_from.config_map_ref:
             config_maps.add(env_from.config_map_ref.name)
     return sorted(config_maps), sorted(secrets)
+
+def get_pods_logs(
+    api_client: ApiClient,
+    pod: str,
+    container: str,
+    namespace: str = "sandbox",
+    previous: bool = False,
+    tail_lines: int = 100,
+) -> str:
+    core = CoreV1Api(api_client)
+    try:
+        logs = core.read_namespaced_pod_log(
+            pod,
+            namespace,
+            container=container,
+            previous=previous,
+            tail_lines=tail_lines,
+        )
+    except client.rest.ApiException as e:
+        print(f"Error getting logs for {pod}/{container}: {e}")
+        return "no logs available"
+    return logs
