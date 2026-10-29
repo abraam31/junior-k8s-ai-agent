@@ -61,6 +61,8 @@ def answer(question) -> dict:
 
 def run_junior(client, api_client, first_message: str) -> dict:
     seen = {}
+    tool_errors = []
+
     def with_cache(entries):
         for entry in entries:
             key = make_key(entry, _prompt_version)
@@ -111,7 +113,12 @@ def run_junior(client, api_client, first_message: str) -> dict:
                     if key and not was_cached:
                         set_entry(key, d)
                     d["cached"] = was_cached
-                return {"diagnosis": tool_use.input.get("diagnosis", []), "summary": tool_use.input.get("summary", ""),"error": None}
+
+                return {
+                    "diagnosis": tool_use.input.get("diagnosis", []), 
+                    "summary": tool_use.input.get("summary", ""),
+                    "error": "; ".join(tool_errors) or None
+                }
 
         if response.stop_reason != "tool_use" or not tool_uses:
             text = "\n".join(b.text for b in response.content if b.type == "text")
@@ -121,17 +128,19 @@ def run_junior(client, api_client, first_message: str) -> dict:
             }
 
         tool_results = []
-
         for tu in tool_uses:
             logging.info(f" -> {tu.name}({json.dumps(tu.input)})")
             handler = handlers.get(tu.name)
+            is_error = False
             try:
                 result = handler(tu.input)
                 result_str = json.dumps(result) if not isinstance(result, str) else result
             except Exception as exc:
                 logging.exception(f"Tool {tu.name} failed")
+                tool_errors.append(f"Tool {tu.name} failed: {str(exc)}")
                 result_str = json.dumps({"error": str(exc)})
-            tool_results.append({"type": "tool_result", "tool_use_id": tu.id, "content": result_str})
+                is_error = True
+            tool_results.append({"type": "tool_result", "tool_use_id": tu.id, "content": result_str, "is_error": is_error})
 
         messages.append({"role": "assistant", "content": response.content})
         messages.append({"role": "user", "content": tool_results})

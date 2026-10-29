@@ -1,3 +1,4 @@
+from .client import ensure_namespace
 from kubernetes import client
 from kubernetes.client import ApiClient, CoreV1Api
 import re
@@ -39,6 +40,7 @@ def check_last_state(container: client.V1ContainerStatus) -> tuple[str, str, str
     return None, None, None, flagged
 
 def get_pods_status(api_client: ApiClient, namespace: str = "sandbox") -> list[dict]:
+    ensure_namespace(api_client, namespace)
     results = []
     problematic_owners = set()
     flagged_owners = set()

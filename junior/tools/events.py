@@ -1,8 +1,10 @@
+from .client import ensure_namespace
 from kubernetes.client import ApiClient, CoreV1Api
 import re
 from datetime import datetime, timezone
 
 def get_events(api_client: ApiClient, namespace: str = "sandbox") -> list[dict]:
+    ensure_namespace(api_client, namespace)
     core = CoreV1Api(api_client)
     events = core.list_namespaced_event(namespace=namespace)
     now = datetime.now(timezone.utc)

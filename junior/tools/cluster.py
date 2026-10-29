@@ -37,5 +37,4 @@ def get_nodes_status(api_client: ApiClient, node_name: str = None) -> list[dict]
             "schedulable": schedulable,
             "issues": issues,
         })
-
     return node_status

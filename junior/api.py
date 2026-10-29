@@ -1,6 +1,7 @@
 """FastAPI /ask endpoint for Junior will go here."""
 
 from fastapi import FastAPI
+from fastapi.responses import JSONResponse
 import os
 from .agent import answer, init
 from .models import AskRequest, AskResponse
@@ -27,7 +28,7 @@ def health_check():
 def ask(req: AskRequest):
     """ Placeholder for the ask endpoint """
     result = answer(req.question)
-    return {
+    body = {
         "question": req.question,
         "diagnosis": result.get("diagnosis", []),
         "summary": result.get("summary"),
@@ -35,3 +36,7 @@ def ask(req: AskRequest):
         "environment": os.getenv("ENVIRONMENT", "dev"),
         "version": os.getenv("VERSION", "0.0.1"),
     }
+    if body["error"]:
+        return JSONResponse(status_code=503, content=body)
+    
+    return body
