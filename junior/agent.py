@@ -14,8 +14,8 @@ import hashlib
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-ANTHROPIC_MODEL = "claude-haiku-4-5"
-BEDROCK_MODEL = "anthropic.claude-haiku-4-5"
+ANTHROPIC_MODEL = "claude-haiku-5-5"
+BEDROCK_MODEL = "anthropic.claude-haiku-5-5"
 MAX_TOKENS = 2048
 MAX_TOOL_ROUNDS = 6
 
@@ -62,7 +62,7 @@ def answer(question) -> dict:
 def run_junior(client, api_client, first_message: str) -> dict:
     seen = {}
     tool_errors = []
-
+    token_usage = {"input": 0, "output": 0, "creation_cache": 0, "read_cache": 0}
     def with_cache(entries):
         for entry in entries:
             key = make_key(entry, _prompt_version)
@@ -98,10 +98,14 @@ def run_junior(client, api_client, first_message: str) -> dict:
             tools=TOOLS,
             system=SYSTEM_PROMPT,
             tool_choice={"type": "auto"},
+            cache_control={"type": "ephemeral"}
         )
         print(response)
         logging.info(f"Round {round_num}: stop_reason={response.stop_reason}")
-
+        token_usage["input"] += response.usage.input_tokens
+        token_usage["output"] += response.usage.output_tokens
+        token_usage["creation_cache"] += response.usage.cache_creation_input_tokens
+        token_usage["read_cache"] += response.usage.cache_read_input_tokens
         tool_uses = [b for b in response.content if b.type == "tool_use"]
 
         for tool_use in tool_uses:
@@ -117,7 +121,8 @@ def run_junior(client, api_client, first_message: str) -> dict:
                 return {
                     "diagnosis": tool_use.input.get("diagnosis", []), 
                     "summary": tool_use.input.get("summary", ""),
-                    "error": "; ".join(tool_errors) or None
+                    "error": "; ".join(tool_errors) or None,
+                    "token_usage": token_usage
                 }
 
         if response.stop_reason != "tool_use" or not tool_uses:
@@ -125,6 +130,7 @@ def run_junior(client, api_client, first_message: str) -> dict:
             return {
                 "error": f"no diagnosis was produced: stop_reason={response.stop_reason}. Exact error: {text}",
                 "diagnosis": None,
+                "token_usage": token_usage
             }
 
         tool_results = []
@@ -144,9 +150,12 @@ def run_junior(client, api_client, first_message: str) -> dict:
 
         messages.append({"role": "assistant", "content": response.content})
         messages.append({"role": "user", "content": tool_results})
-        logging.info(f"Input token usage: {response.usage.input_tokens}. Output token usage: {response.usage.output_tokens}.")
 
-    return {"diagnosis": None, "error": f"no diagnosis was concluded. Stop reason: {response.stop_reason}. Hit max tool rounds without a diagnosis."}
+    return {
+        "diagnosis": None, 
+        "error": f"no diagnosis was concluded. Stop reason: {response.stop_reason}. Hit max tool rounds without a diagnosis.",
+        "token_usage": token_usage
+    }
 
 def main() -> None:
     init()

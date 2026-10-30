@@ -35,6 +35,7 @@ def ask(req: AskRequest):
         "error": result.get("error", None),
         "environment": os.getenv("ENVIRONMENT", "dev"),
         "version": os.getenv("VERSION", "0.0.1"),
+        "token_usage": result.get("token_usage", {"input": 0, "output": 0}),
     }
     if body["error"]:
         return JSONResponse(status_code=503, content=body)

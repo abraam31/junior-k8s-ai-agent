@@ -21,3 +21,4 @@ class AskResponse(BaseModel):
     error: str | None
     environment: str
     version: str
+    token_usage: dict
