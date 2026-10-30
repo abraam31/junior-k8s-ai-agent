@@ -1,0 +1,19 @@
+- id: all-issues
+  question: "What are all the issues in the cluster?"
+  expect_status: 200
+  expected:
+    - {"kind": "Pod", "name": "bad-image", "category": "k8s_issue"}
+    - {"kind": "Pod", "name": "memory-hog", "category": "unclear"}
+    - {"kind": "ReplicaSet", "name": "billing", "category": "k8s_issue"}
+    - {"kind": "PersistentVolumeClaim", "name": "reports-data", "category": "k8s_issue"}
+    - {"kind": "HorizontalPodAutoscaler", "name": "search", "category": "k8s_issue"}
+
+- id: missing-namespace
+  question: "Are there any issues in the prod namespace?"
+  expect_status: 404
+  expected: []
+
+- id: no-node-issues
+  question: "Are there any node issues in the cluster?"
+  expect_status: 200
+  expected: []
