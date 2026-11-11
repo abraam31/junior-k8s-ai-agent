@@ -1,0 +1,13 @@
+# Main container healthy, sidecar broken -> tests that every container is inspected
+apiVersion: v1
+kind: Pod
+metadata:
+  name: sidecar-broken
+  namespace: sandbox
+spec:
+  containers:
+    - name: app
+      image: nginx:1.27
+    - name: log-shipper
+      image: busybox:1.36
+      command: ["sh", "-c", "echo 'cannot open /var/log/app/access.log: No such file or directory'; exit 1"]

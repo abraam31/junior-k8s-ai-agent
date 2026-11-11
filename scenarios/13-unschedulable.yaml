@@ -1,0 +1,13 @@
+# Requests more CPU than any node has -> Pending, no container statuses at all
+apiVersion: v1
+kind: Pod
+metadata:
+  name: unschedulable
+  namespace: sandbox
+spec:
+  containers:
+    - name: big
+      image: nginx:1.27
+      resources:
+        requests:
+          cpu: "500"

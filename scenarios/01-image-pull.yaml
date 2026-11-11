@@ -1,0 +1,10 @@
+# Image tag that does not exist -> ErrImagePull / ImagePullBackOff
+apiVersion: v1
+kind: Pod
+metadata:
+  name: bad-image
+  namespace: sandbox
+spec:
+  containers:
+    - name: web
+      image: nginx:9.9.9-does-not-exist

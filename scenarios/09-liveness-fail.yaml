@@ -1,0 +1,18 @@
+# Liveness probe hits a path that 404s -> kubelet keeps restarting a healthy nginx.
+# The cause is only visible in Events, not in container status or logs.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: bad-liveness
+  namespace: sandbox
+spec:
+  containers:
+    - name: web
+      image: nginx:1.27
+      livenessProbe:
+        httpGet:
+          path: /healthz
+          port: 80
+        initialDelaySeconds: 5
+        periodSeconds: 5
+        failureThreshold: 2

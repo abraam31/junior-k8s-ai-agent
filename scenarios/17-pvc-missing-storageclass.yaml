@@ -1,0 +1,13 @@
+# PVC asking for a StorageClass that doesn't exist. Stays Pending forever,
+# no pod involved -> ProvisioningFailed event on kind: PersistentVolumeClaim.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: reports-data
+  namespace: sandbox
+spec:
+  storageClassName: fast-ssd
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 1Gi

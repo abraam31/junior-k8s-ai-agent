@@ -1,0 +1,10 @@
+# Control: healthy pod -> must NOT appear in the diagnosis
+apiVersion: v1
+kind: Pod
+metadata:
+  name: healthy
+  namespace: sandbox
+spec:
+  containers:
+    - name: web
+      image: nginx:1.27

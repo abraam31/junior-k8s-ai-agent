@@ -1,0 +1,14 @@
+# Init container fails -> main container stays waiting in PodInitializing
+apiVersion: v1
+kind: Pod
+metadata:
+  name: init-fails
+  namespace: sandbox
+spec:
+  initContainers:
+    - name: migrate
+      image: busybox:1.36
+      command: ["sh", "-c", "echo 'running migrations'; echo 'ERROR: relation \"users\" already exists'; exit 1"]
+  containers:
+    - name: app
+      image: nginx:1.27

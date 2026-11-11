@@ -1,0 +1,23 @@
+# Deployment whose pods reference a ServiceAccount that doesn't exist.
+# The ReplicaSet can't create any pod -> no pods at all, only a
+# FailedCreate event on kind: ReplicaSet ("serviceaccount ... not found").
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: billing
+  namespace: sandbox
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: billing
+  template:
+    metadata:
+      labels:
+        app: billing
+    spec:
+      serviceAccountName: billing-sa
+      containers:
+        - name: api
+          image: busybox:1.36
+          command: ["sh", "-c", "sleep 3600"]

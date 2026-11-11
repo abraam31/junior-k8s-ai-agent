@@ -1,0 +1,20 @@
+# 3 replicas with the same crash -> tests owner dedupe (expect ONE diagnosis, not three)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: checkout
+  namespace: sandbox
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: checkout
+  template:
+    metadata:
+      labels:
+        app: checkout
+    spec:
+      containers:
+        - name: checkout
+          image: busybox:1.36
+          command: ["sh", "-c", "echo 'panic: nil pointer dereference in cart.Total()'; exit 2"]

@@ -1,0 +1,28 @@
+# Crashes once (exit 3), then runs fine -> Running with restartCount=1 ("flagged")
+# The marker survives the container restart because emptyDir is pod-scoped.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: flaky-once
+  namespace: sandbox
+spec:
+  containers:
+    - name: cache-warmer
+      image: busybox:1.36
+      command:
+        - sh
+        - -c
+        - |
+          if [ ! -f /state/started ]; then
+            touch /state/started
+            echo "ERROR: upstream inventory-api returned 503, giving up"
+            exit 3
+          fi
+          echo "retry succeeded, serving"
+          sleep 3600
+      volumeMounts:
+        - name: state
+          mountPath: /state
+  volumes:
+    - name: state
+      emptyDir: {}

@@ -1,0 +1,14 @@
+# Allocates far more than its 32Mi limit -> OOMKilled, then CrashLoopBackOff
+apiVersion: v1
+kind: Pod
+metadata:
+  name: memory-hog
+  namespace: sandbox
+spec:
+  containers:
+    - name: hog
+      image: busybox:1.36
+      command: ["sh", "-c", "echo 'loading cache into memory'; head -c 500m /dev/zero | tail"]
+      resources:
+        limits:
+          memory: 32Mi

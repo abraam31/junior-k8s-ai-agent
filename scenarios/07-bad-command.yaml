@@ -1,0 +1,11 @@
+# Entrypoint binary does not exist in the image -> StartError / RunContainerError
+apiVersion: v1
+kind: Pod
+metadata:
+  name: bad-command
+  namespace: sandbox
+spec:
+  containers:
+    - name: job
+      image: busybox:1.36
+      command: ["/app/run-server"]
